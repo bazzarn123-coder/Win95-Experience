@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Windows 95 - Unrestricted Drag</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Tahoma', 'MS Sans Serif', sans-serif;
+            font-size: 11px;
+            touch-action: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #008080;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- Desktop Icons --- */
+        #desktop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 28px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 15px;
+        }
+
+        .icon {
+            width: 75px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+            color: white;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        .icon:hover .icon-title {
+            background-color: #000080;
+        }
+
+        .icon-symbol {
+            font-size: 30px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 4px;
+        }
+        
+        .doom-desktop-icon {
+            background: #c0c0c0;
+            border: 2px outset #fff;
+            color: #000;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .icon-title {
+            padding: 1px 3px;
+            border: 1px transparent dotted;
+            word-wrap: break-word;
+        }
+
+        /* --- Windows 95 Window Frame --- */
+        .window {
+            position: absolute;
+            background: #C0C0C0;
+            border-top: 2px solid #FFFFFF;
+            border-left: 2px solid #FFFFFF;
+            border-right: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            box-shadow: 1px 1px 0 #808080, inset -1px -1px 0 #808080;
+            display: flex;
+            flex-direction: column;
+            min-width: 250px;
+            min-height: 180px;
+            z-index: 10;
+        }
+
+        .window.active {
+            z-index: 100;
+        }
+
+        .window.maximized {
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: calc(100vh - 28px) !important;
+            border: none;
+            box-shadow: none;
+        }
+
+        .title-bar {
+            background: #808080;
+            padding: 2px 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #C0C0C0;
+            font-weight: bold;
+            height: 18px;
+            cursor: default;
+        }
+
+        .window.active .title-bar {
+            background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+            color: white;
+        }
+
+        .title-text {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            overflow: hidden;
+            white-space: nowrap;
+            cursor: move;
+            flex: 1;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 2px;
+        }
+
+        .win-btn {
+            width: 16px;
+            height: 14px;
+            background: #C0C0C0;
+            border-top: 1px solid #FFFFFF;
+            border-left: 1px solid #FFFFFF;
+            border-right: 1px solid #000000;
+            border-bottom: 1px solid #000000;
+            box-shadow: inset -1px -1px 0 #808080;
+            color: #000;
+            font-size: 9px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .win-btn:active {
+            border-top: 1px solid #000000;
+            border-left: 1px solid #000000;
+            border-right: 1px solid #FFFFFF;
+            border-bottom: 1px solid #FFFFFF;
+            box-shadow: none;
+            padding-top: 1px;
+            padding-left: 1px;
+        }
+
+        .menu-bar {
+            display: flex;
+            gap: 12px;
+            padding: 2px 6px;
+            border-bottom: 1px solid #808080;
+            background: #C0C0C0;
+        }
+
+        .menu-item {
+            cursor: pointer;
+            padding: 1px 4px;
+        }
+
+        .menu-item:hover {
+            background: #000080;
+            color: white;
+        }
+
+        .window-body {
+            flex: 1;
+            padding: 4px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #C0C0C0;
+        }
+
+        .inset-panel {
+            background: white;
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #FFFFFF;
+            border-bottom: 2px solid #FFFFFF;
+            box-shadow: inset 1px 1px 0 #000000;
+            flex: 1;
+            padding: 0;
+            overflow: auto;
+            position: relative;
+        }
+
+        /* --- Taskbar --- */
+        #taskbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 28px;
+            background: #C0C0C0;
+            border-top: 2px solid #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2px;
+            z-index: 10000;
+        }
+
+        .start-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: bold;
+            background: #C0C0C0;
+            border-top: 2px solid #FFFFFF;
+            border-left: 2px solid #FFFFFF;
+            border-right: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            box-shadow: inset -1px -1px 0 #808080;
+            padding: 2px 6px;
+            height: 22px;
+            cursor: pointer;
+        }
+
+        .start-btn.active, .start-btn:active {
+            border-top: 2px solid #000000;
+            border-left: 2px solid #000000;
+            border-right: 2px solid #FFFFFF;
+            border-bottom: 2px solid #FFFFFF;
+            box-shadow: none;
+            padding-top: 3px;
+            padding-left: 7px;
+        }
+
+        #task-list {
+            display: flex;
+            gap: 2px;
+            flex: 1;
+            margin: 0 4px;
+            overflow-x: auto;
+        }
+
+        .task-item {
+            background: #C0C0C0;
+            border-top: 2px solid #FFFFFF;
+            border-left: 2px solid #FFFFFF;
+            border-right: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            box-shadow: inset -1px -1px 0 #808080;
+            padding: 2px 6px;
+            height: 22px;
+            width: 140px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .task-item.active {
+            background: #e0e0e0;
+            border-top: 2px solid #000000;
+            border-left: 2px solid #000000;
+            border-right: 2px solid #FFFFFF;
+            border-bottom: 2px solid #FFFFFF;
+            box-shadow: inset 1px 1px 0 #808080;
+            font-weight: bold;
+        }
+
+        .systray {
+            border-top: 1px solid #808080;
+            border-left: 1px solid #808080;
+            border-right: 1px solid #FFFFFF;
+            border-bottom: 1px solid #FFFFFF;
+            padding: 2px 8px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #C0C0C0;
+        }
+
+        /* --- Start Menu --- */
+        #start-menu {
+            position: fixed;
+            bottom: 28px;
+            left: 2px;
+            width: 180px;
+            background: #C0C0C0;
+            border-top: 2px solid #FFFFFF;
+            border-left: 2px solid #FFFFFF;
+            border-right: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.4);
+            display: none;
+            flex-direction: row;
+            z-index: 10001;
+        }
+
+        .start-banner {
+            background: linear-gradient(0deg, #000080, #1084d0);
+            width: 26px;
+            color: white;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            padding: 6px 2px;
+            font-weight: bold;
+            font-size: 14px;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .start-items {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 2px 0;
+        }
+
+        .start-item {
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .start-item:hover {
+            background: #000080;
+            color: white;
+        }
+
+        .start-divider {
+            height: 1px;
+            background: #808080;
+            border-bottom: 1px solid #FFFFFF;
+            margin: 2px 0;
+        }
+
+        /* --- Paint Controls --- */
+        .paint-toolbar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 4px;
+            background: #C0C0C0;
+            border-top: 1px solid #808080;
+        }
+
+        .paint-palette {
+            display: flex;
+            gap: 2px;
+            background: #808080;
+            padding: 2px;
+            border: 1px inset #fff;
+        }
+
+        .color-swatch {
+            width: 14px;
+            height: 14px;
+            border: 1px solid #000;
+            cursor: pointer;
+        }
+
+        .color-swatch.selected {
+            border: 2px solid #fff;
+            outline: 1px solid #000;
+        }
+
+        .size-btn {
+            background: #C0C0C0;
+            border-top: 1px solid #FFFFFF;
+            border-left: 1px solid #FFFFFF;
+            border-right: 1px solid #000000;
+            border-bottom: 1px solid #000000;
+            padding: 2px 6px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .size-btn.active, .size-btn:active {
+            border-top: 1px solid #000000;
+            border-left: 1px solid #000000;
+            border-right: 1px solid #FFFFFF;
+            border-bottom: 1px solid #FFFFFF;
+            font-weight: bold;
+        }
+
+        textarea.notepad-text {
+            width: 100%;
+            height: 100%;
+            border: none;
+            outline: none;
+            resize: none;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            padding: 4px;
+        }
+
+        canvas#paint-canvas {
+            background: white;
+            cursor: crosshair;
+            display: block;
+            touch-action: none;
+        }
+
+        /* --- DOOM 95 Specific Styles --- */
+        #viewport-container {
+            position: relative;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            border: 3px inset #DFDFDF;
+        }
+
+        #gameCanvas {
+            display: block;
+            background: #000;
+            width: 100%;
+            height: 320px;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        /* DOOM HUD */
+        #hud {
+            width: 100%;
+            height: 52px;
+            border-top: 3px solid #555555;
+            display: grid;
+            grid-template-columns: 1.2fr 1.2fr 1fr 1.2fr 1.2fr;
+            padding: 3px;
+            gap: 4px;
+            background: linear-gradient(180deg, #3a3a3a 0%, #1a1a1a 100%);
+        }
+        .hud-panel {
+            background: #000;
+            border: 2px inset #666;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .hud-label {
+            font-size: 9px;
+            color: #B00000;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .hud-value {
+            font-size: 22px;
+            font-family: 'Impact', 'Arial Black', sans-serif;
+            color: #FF0000;
+            text-shadow: 0 0 4px #800000;
+            line-height: 1;
+        }
+        #face-panel {
+            background: #111;
+            border: 2px inset #666;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #face {
+            width: 38px;
+            height: 38px;
+            background: #700000;
+            border: 1px solid #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        /* Touch Controls Overlay for DOOM */
+        #touch-controls {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 320px;
+            pointer-events: none;
+            z-index: 50;
+        }
+        #joystick-area {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            width: 110px;
+            height: 110px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px dashed rgba(255, 255, 255, 0.25);
+            border-radius: 50%;
+            pointer-events: auto;
+        }
+        #joystick-knob {
+            position: absolute;
+            top: 35px;
+            left: 35px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .touch-btn {
+            position: absolute;
+            background: rgba(180, 0, 0, 0.4);
+            border: 2px outset rgba(255, 255, 255, 0.6);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            pointer-events: auto;
+        }
+        #btn-turn-left { bottom: 65px; right: 100px; width: 45px; height: 45px; }
+        #btn-turn-right { bottom: 65px; right: 10px; width: 45px; height: 45px; }
+        #btn-fire { bottom: 10px; right: 10px; width: 135px; height: 48px; background: rgba(200, 0, 0, 0.7); font-size: 15px; }
+
+        /* Game Over / Start Overlays for DOOM */
+        .doom-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.88);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            text-align: center;
+            padding: 20px;
+        }
+        .doom-overlay h1 { color: #B00000; font-size: 32px; margin: 0 0 10px 0; text-shadow: 2px 2px #000; font-family: 'Impact', sans-serif; letter-spacing: 2px; }
+        .doom-overlay p { color: #ccc; font-size: 12px; max-width: 400px; line-height: 1.4; margin: 4px 0; }
+        .btn-doom {
+            background: #C0C0C0;
+            color: #000;
+            border: 2px outset #FFFFFF;
+            padding: 6px 16px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        .btn-doom:active { border-style: inset; }
+    </style>
+</head>
+<body>
+
+    <!-- Desktop Icons -->
+    <div id="desktop">
+        <div class="icon" onclick="openApp('paint')">
+            <div class="icon-symbol">🎨</div>
+            <span class="icon-title">Paint</span>
+        </div>
+        <div class="icon" onclick="openApp('notepad')">
+            <div class="icon-symbol">📝</div>
+            <span class="icon-title">Notepad</span>
+        </div>
+        <div class="icon" onclick="openApp('mycomputer')">
+            <div class="icon-symbol">💻</div>
+            <span class="icon-title">My Computer</span>
+        </div>
+        <div class="icon" onclick="openApp('ie')">
+            <div class="icon-symbol">🌐</div>
+            <span class="icon-title">Internet Explorer</span>
+        </div>
+        <div class="icon" onclick="openApp('recycle')">
+            <div class="icon-symbol">🗑️</div>
+            <span class="icon-title">Recycle Bin</span>
+        </div>
+        <div class="icon" onclick="openApp('doom')">
+            <div class="icon-symbol doom-desktop-icon" style="background:#800; color:#fff;">D95</div>
+            <span class="icon-title">Doom 95</span>
+        </div>
+    </div>
+
+    <!-- Start Menu -->
+    <div id="start-menu">
+        <div class="start-banner"><b>Windows</b>95</div>
+        <div class="start-items">
+            <div class="start-item" onclick="openApp('doom')">💀 Doom 95</div>
+            <div class="start-item" onclick="openApp('paint')">🎨 Paint</div>
+            <div class="start-item" onclick="openApp('notepad')">📝 Notepad</div>
+            <div class="start-item" onclick="openApp('ie')">🌐 Internet Explorer</div>
+            <div class="start-item" onclick="openApp('mycomputer')">💻 My Computer</div>
+            <div class="start-divider"></div>
+            <div class="start-item" onclick="alert('System shutdown simulated!')">💻 Shut Down...</div>
+        </div>
+    </div>
+
+    <!-- Windows Container -->
+    <div id="window-container"></div>
+
+    <!-- Taskbar -->
+    <div id="taskbar">
+        <div class="start-btn" id="start-btn" onclick="toggleStartMenu()">
+            <span>🪟</span> <span>Start</span>
+        </div>
+        <div id="task-list"></div>
+        <div class="systray">
+            <span>🔊</span>
+            <span id="clock">12:00 PM</span>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // WINDOW MANAGER AND APPS (Win95 Base)
+        // ==========================================
+        let zIndexCounter = 10;
+        const openWindows = {};
+
+        const apps = {
+            paint: {
+                title: "untitled - Paint",
+                icon: "🎨",
+                width: 440,
+                height: 350,
+                content: `
+                    <div class="menu-bar">
+                        <span class="menu-item">File</span>
+                        <span class="menu-item">Edit</span>
+                        <span class="menu-item">View</span>
+                        <span class="menu-item" onclick="clearPaintCanvas()">Clear Image</span>
+                    </div>
+                    <div class="window-body">
+                        <div class="inset-panel" id="paint-canvas-container">
+                            <canvas id="paint-canvas" width="420" height="230"></canvas>
+                        </div>
+                        <div class="paint-toolbar">
+                            <span>Colors:</span>
+                            <div class="paint-palette">
+                                <div class="color-swatch selected" style="background:#000000" onclick="setPaintColor('#000000', this)"></div>
+                                <div class="color-swatch" style="background:#808080" onclick="setPaintColor('#808080', this)"></div>
+                                <div class="color-swatch" style="background:#800000" onclick="setPaintColor('#800000', this)"></div>
+                                <div class="color-swatch" style="background:#008000" onclick="setPaintColor('#008000', this)"></div>
+                                <div class="color-swatch" style="background:#000080" onclick="setPaintColor('#000080', this)"></div>
+                                <div class="color-swatch" style="background:#FF0000" onclick="setPaintColor('#FF0000', this)"></div>
+                                <div class="color-swatch" style="background:#00FF00" onclick="setPaintColor('#00FF00', this)"></div>
+                                <div class="color-swatch" style="background:#00FFFF" onclick="setPaintColor('#00FFFF', this)"></div>
+                                <div class="color-swatch" style="background:#FFFF00" onclick="setPaintColor('#FFFF00', this)"></div>
+                                <div class="color-swatch" style="background:#FFFFFF" onclick="setPaintColor('#FFFFFF', this)"></div>
+                            </div>
+                            <span style="margin-left:auto;">Size:</span>
+                            <button class="size-btn" onclick="setPaintSize(1, this)">Thin</button>
+                            <button class="size-btn active" onclick="setPaintSize(3, this)">Med</button>
+                            <button class="size-btn" onclick="setPaintSize(7, this)">Thick</button>
+                        </div>
+                    </div>`
+            },
+            notepad: {
+                title: "Untitled - Notepad",
+                icon: "📝",
+                width: 380,
+                height: 260,
+                content: `
+                    <div class="menu-bar">
+                        <span class="menu-item">File</span>
+                        <span class="menu-item">Edit</span>
+                        <span class="menu-item">Search</span>
+                        <span class="menu-item">Help</span>
+                    </div>
+                    <div class="window-body">
+                        <div class="inset-panel">
+                            <textarea class="notepad-text" spellcheck="false">Welcome to Windows 95!&#10;&#10;Windows are fully movable now. You can drag them past the left border freely!</textarea>
+                        </div>
+                    </div>`
+            },
+            mycomputer: {
+                title: "My Computer",
+                icon: "💻",
+                width: 320,
+                height: 220,
+                content: `
+                    <div class="menu-bar">
+                        <span class="menu-item">File</span>
+                        <span class="menu-item">Edit</span>
+                        <span class="menu-item">View</span>
+                    </div>
+                    <div class="window-body">
+                        <div class="inset-panel" style="display: flex; gap: 15px; padding: 15px; flex-wrap: wrap; background: white;">
+                            <div style="text-align:center; cursor:pointer;" onclick="alert('3½ Floppy (A:) is not accessible.')">
+                                <div style="font-size:24px;">💾</div>
+                                <div>3½ Floppy (A:)</div>
+                            </div>
+                            <div style="text-align:center; cursor:pointer;" onclick="alert('C:\\ Drive - 1.2GB Free')">
+                                <div style="font-size:24px;">💽</div>
+                                <div>Hard Disk (C:)</div>
+                            </div>
+                        </div>
+                    </div>`
+            },
+            ie: {
+                title: "Internet Explorer",
+                icon: "🌐",
+                width: 420,
+                height: 280,
+                content: `
+                    <div class="menu-bar">
+                        <span class="menu-item">File</span>
+                        <span class="menu-item">Edit</span>
+                        <span class="menu-item">View</span>
+                    </div>
+                    <div style="padding: 2px 6px; display:flex; gap:4px; align-items:center; background:#c0c0c0;">
+                        Address: <input type="text" value="http://www.microsoft.com" style="flex:1; border: 1px inset #808080;">
+                    </div>
+                    <div class="window-body">
+                        <div class="inset-panel" style="text-align: center; padding: 20px;">
+                            <h2 style="color:#000080; margin-top:0;">Welcome to MSN Web</h2>
+                            <p>Connecting via 28.8k Modem...</p>
+                        </div>
+                    </div>`
+            },
+            recycle: {
+                title: "Recycle Bin",
+                icon: "🗑️",
+                width: 300,
+                height: 180,
+                content: `
+                    <div class="menu-bar"><span class="menu-item">File</span><span class="menu-item">Edit</span></div>
+                    <div class="window-body">
+                        <div class="inset-panel" style="color:#808080; display:flex; align-items:center; justify-content:center;">
+                            Recycle Bin is empty.
+                        </div>
+                    </div>`
+            },
+            doom: {
+                title: "DOOM 95",
+                icon: "💀",
+                width: 450,
+                height: 440,
+                content: `
+                    <div class="menu-bar">
+                        <span class="menu-item">File</span>
+                        <span class="menu-item">Options</span>
+                        <span class="menu-item">Multiplayer</span>
+                        <span class="menu-item">Help</span>
+                    </div>
+                    <div class="window-body" style="background: #C0C0C0; padding: 4px;">
+                        <div id="viewport-container">
+                            <div id="start-overlay" class="doom-overlay">
+                                <h1>DOOM 95</h1>
+                                <p>UAC Research Facility Outpost 3.<br>Clear out all 5 demonic entities to secure the base!</p>
+                                <p style="margin-top: 8px; color: #aaa; font-size: 11px;">WASD / Arrows: Move & Turn | Space / Button: Fire</p>
+                                <button class="btn-doom" id="doom-start-btn">Start Game</button>
+                            </div>
+
+                            <div id="end-overlay" class="doom-overlay" style="display: none;">
+                                <h1 id="end-title">YOU DIED</h1>
+                                <p id="end-desc">The demons claimed your soul.</p>
+                                <button class="btn-doom" id="restart-btn">Play Again</button>
+                            </div>
+
+                            <canvas id="gameCanvas" width="320" height="200"></canvas>
+
+                            <div id="touch-controls">
+                                <div id="joystick-area"><div id="joystick-knob"></div></div>
+                                <div class="touch-btn" id="btn-turn-left">◀</div>
+                                <div class="touch-btn" id="btn-turn-right">▶</div>
+                                <div class="touch-btn" id="btn-fire">FIRE</div>
+                            </div>
+
+                            <div id="hud">
+                                <div class="hud-panel">
+                                    <span class="hud-label">AMMO</span>
+                                    <span class="hud-value" id="hud-ammo" style="color: #FFFF00;">25</span>
+                                </div>
+                                <div class="hud-panel">
+                                    <span class="hud-label">HEALTH</span>
+                                    <span class="hud-value" id="hud-health" style="color: #00FF00;">100</span>
+                                </div>
+                                <div id="face-panel">
+                                    <div id="face">😁</div>
+                                </div>
+                                <div class="hud-panel">
+                                    <span class="hud-label">ARMOR</span>
+                                    <span class="hud-value" id="hud-armor" style="color: #00FFFF;">25</span>
+                                </div>
+                                <div class="hud-panel">
+                                    <span class="hud-label">KILLS</span>
+                                    <span class="hud-value" id="hud-kills" style="color: #FF3333;">0/5</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`
+            }
+        };
+
+        function openApp(appId) {
+            if (openWindows[appId]) {
+                focusWindow(appId);
+                return;
+            }
+
+            const app = apps[appId];
+            if (!app) return;
+
+            const winEl = document.createElement('div');
+            winEl.className = 'window active';
+            winEl.id = `win-${appId}`;
+            winEl.style.width = app.width + 'px';
+            winEl.style.height = app.height + 'px';
+            
+            const offset = Object.keys(openWindows).length * 20 + 30;
+            winEl.style.top = offset + 'px';
+            winEl.style.left = offset + 'px';
+
+            winEl.innerHTML = `
+                <div class="title-bar" onpointerdown="startDrag(event, '${appId}')">
+                    <div class="title-text">
+                        <span>${app.icon}</span>
+                        <span>${app.title}</span>
+                    </div>
+                    <div class="window-controls">
+                        <div class="win-btn" onclick="minimizeWindow('${appId}')">_</div>
+                        <div class="win-btn" onclick="toggleMaximizeWindow('${appId}')">🗖</div>
+                        <div class="win-btn" onclick="closeWindow('${appId}')">✕</div>
+                    </div>
+                </div>
+                ${app.content}
+            `;
+
+            winEl.addEventListener('pointerdown', () => focusWindow(appId));
+            document.getElementById('window-container').appendChild(winEl);
+
+            openWindows[appId] = winEl;
+            addTaskbarItem(appId, app);
+            focusWindow(appId);
+
+            if (appId === 'paint') initPaintCanvas();
+            if (appId === 'doom') initDoom();
+            
+            closeStartMenu();
+        }
+
+        function focusWindow(appId) {
+            Object.keys(openWindows).forEach(id => {
+                openWindows[id].classList.remove('active');
+                const task = document.getElementById(`task-${id}`);
+                if (task) task.classList.remove('active');
+            });
+
+            const win = openWindows[appId];
+            if (win) {
+                zIndexCounter++;
+                win.style.zIndex = zIndexCounter;
+                win.style.display = 'flex';
+                win.classList.add('active');
+
+                const task = document.getElementById(`task-${appId}`);
+                if (task) task.classList.add('active');
+            }
+        }
+
+        function closeWindow(appId) {
+            const win = openWindows[appId];
+            if (win) {
+                win.remove();
+                delete openWindows[appId];
+            }
+            const task = document.getElementById(`task-${appId}`);
+            if (task) task.remove();
+        }
+
+        function minimizeWindow(appId) {
+            const win = openWindows[appId];
+            if (win) {
+                win.style.display = 'none';
+                const task = document.getElementById(`task-${appId}`);
+                if (task) task.classList.remove('active');
+            }
+        }
+
+        function toggleMaximizeWindow(appId) {
+            const win = openWindows[appId];
+            if (win) {
+                focusWindow(appId);
+                if (!win.classList.contains('maximized')) {
+                    win.dataset.prevWidth = win.style.width;
+                    win.dataset.prevHeight = win.style.height;
+                    win.dataset.prevTop = win.style.top;
+                    win.dataset.prevLeft = win.style.left;
+                    win.classList.add('maximized');
+                } else {
+                    win.classList.remove('maximized');
+                    win.style.width = win.dataset.prevWidth;
+                    win.style.height = win.dataset.prevHeight;
+                    win.style.top = win.dataset.prevTop;
+                    win.style.left = win.dataset.prevLeft;
+                }
+            }
+        }
+
+        function addTaskbarItem(appId, app) {
+            const taskList = document.getElementById('task-list');
+            const item = document.createElement('div');
+            item.className = 'task-item';
+            item.id = `task-${appId}`;
+            item.innerHTML = `<span>${app.icon}</span> <span>${app.title}</span>`;
+            item.onclick = () => {
+                const win = openWindows[appId];
+                if (win.style.display === 'none' || !win.classList.contains('active')) {
+                    focusWindow(appId);
+                } else {
+                    minimizeWindow(appId);
+                }
+            };
+            taskList.appendChild(item);
+        }
+
+        // Unrestricted Left Window Dragging Implementation
+        let dragOffset = { x: 0, y: 0 };
+        let draggingAppId = null;
+
+        function startDrag(e, appId) {
+            const win = openWindows[appId];
+            if (win.classList.contains('maximized')) return;
+            
+            draggingAppId = appId;
+            focusWindow(appId);
+            
+            dragOffset.x = e.clientX - win.offsetLeft;
+            dragOffset.y = e.clientY - win.offsetTop;
+
+            window.addEventListener('pointermove', onDrag);
+            window.addEventListener('pointerup', stopDrag);
+            e.preventDefault();
+        }
+
+        function onDrag(e) {
+            if (!draggingAppId) return;
+            const win = openWindows[draggingAppId];
+            if (!win) return;
+            
+            let newLeft = e.clientX - dragOffset.x;
+            let newTop = e.clientY - dragOffset.y;
+            
+            // Allow dragging past the left edge completely, but keep top protected
+            win.style.left = newLeft + 'px';
+            win.style.top = Math.max(0, newTop) + 'px';
+        }
+
+        function stopDrag() {
+            draggingAppId = null;
+            window.removeEventListener('pointermove', onDrag);
+            window.removeEventListener('pointerup', stopDrag);
+        }
+
+        // Start Menu
+        function toggleStartMenu() {
+            const menu = document.getElementById('start-menu');
+            const btn = document.getElementById('start-btn');
+            const isOpen = menu.style.display === 'flex';
+            menu.style.display = isOpen ? 'none' : 'flex';
+            btn.classList.toggle('active', !isOpen);
+        }
+
+        function closeStartMenu() {
+            document.getElementById('start-menu').style.display = 'none';
+            document.getElementById('start-btn').classList.remove('active');
+        }
+
+        document.getElementById('desktop').addEventListener('click', closeStartMenu);
+
+        // System Clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // ==========================================
+        // PAINT APP LOGIC
+        // ==========================================
+        let currentColor = '#000000';
+        let currentSize = 3;
+
+        function initPaintCanvas() {
+            const canvas = document.getElementById('paint-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let isDrawing = false;
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            function getPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            }
+
+            function draw(e) {
+                if (!isDrawing) return;
+                const pos = getPos(e);
+                ctx.strokeStyle = currentColor;
+                ctx.lineWidth = currentSize;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+            }
+
+            canvas.onpointerdown = (e) => {
+                isDrawing = true;
+                canvas.setPointerCapture(e.pointerId);
+                const pos = getPos(e);
+
+                ctx.fillStyle = currentColor;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, currentSize / 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+                e.preventDefault();
+            };
+
+            canvas.onpointermove = (e) => { if (isDrawing) { draw(e); e.preventDefault(); } };
+            canvas.onpointerup = (e) => {
+                if (isDrawing) {
+                    isDrawing = false;
+                    try { canvas.releasePointerCapture(e.pointerId); } catch(err){}
+                    ctx.beginPath();
+                }
+            };
+            canvas.onpointercancel = canvas.onpointerup;
+        }
+
+        function setPaintColor(color, el) {
+            currentColor = color;
+            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+            if (el) el.classList.add('selected');
+        }
+
+        function setPaintSize(size, el) {
+            currentSize = size;
+            document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+            if (el) el.classList.add('active');
+        }
+
+        function clearPaintCanvas() {
+            const canvas = document.getElementById('paint-canvas');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+
+        // ==========================================
+        // DOOM 95 ENGINE LOGIC
+        // ==========================================
+        let doomInitialized = false;
+        let doomCtx = null;
+        let audioCtx = null;
+        const screenWidth = 320;
+        const screenHeight = 200;
+        const TEX_SIZE = 64;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            try {
+                if (type === 'shotgun') {
+                    const bufferSize = audioCtx.sampleRate * 0.25;
+                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                    const noise = audioCtx.createBufferSource();
+                    noise.buffer = buffer;
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(600, audioCtx.currentTime);
+                    filter.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.25);
+                    const gain = audioCtx.createGain();
+                    gain.gain.setValueAtTime(1.0, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    noise.start();
+                } else if (type === 'pain') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.2);
+                } else if (type === 'item') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(350, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(700, audioCtx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.15);
+                }
+            } catch(e) {}
+        }
+
+        function generateBrickTexture() {
+            const cv = document.createElement('canvas');
+            cv.width = TEX_SIZE; cv.height = TEX_SIZE;
+            const cx = cv.getContext('2d');
+            cx.fillStyle = '#5A3D28'; cx.fillRect(0,0,64,64);
+            cx.fillStyle = '#2A180C';
+            for (let y = 0; y < 64; y += 16) {
+                cx.fillRect(0, y, 64, 2);
+                let offset = (y / 16) % 2 === 0 ? 0 : 16;
+                for (let x = offset; x < 64; x += 32) cx.fillRect(x, y, 2, 16);
+            }
+            for(let i=0; i<200; i++) {
+                cx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.12)';
+                cx.fillRect(Math.random()*64, Math.random()*64, 2, 2);
+            }
+            return cv;
+        }
+
+        function generateTechTexture() {
+            const cv = document.createElement('canvas');
+            cv.width = TEX_SIZE; cv.height = TEX_SIZE;
+            const cx = cv.getContext('2d');
+            cx.fillStyle = '#4A525A'; cx.fillRect(0,0,64,64);
+            cx.strokeStyle = '#2A3035'; cx.lineWidth = 2; cx.strokeRect(2,2,60,60); cx.strokeRect(10,10,44,44);
+            cx.fillStyle = '#8A95A0';
+            [4, 58].forEach(x => [4, 58].forEach(y => cx.fillRect(x-1, y-1, 3, 3)));
+            cx.fillStyle = '#D4A017'; cx.fillRect(12, 46, 40, 8);
+            cx.fillStyle = '#111';
+            for(let x=12; x<52; x+=8) {
+                cx.beginPath(); cx.moveTo(x, 46); cx.lineTo(x+4, 54); cx.lineTo(x+2, 54); cx.lineTo(x-2, 46); cx.fill();
+            }
+            return cv;
+        }
+
+        function generateDemonSprite() {
+            const cv = document.createElement('canvas');
+            cv.width = TEX_SIZE; cv.height = TEX_SIZE;
+            const cx = cv.getContext('2d');
+
+            cx.fillStyle = '#5A1A1A';
+            cx.fillRect(20, 42, 9, 20); cx.fillRect(35, 42, 9, 20);
+            
+            cx.fillStyle = '#8B2525';
+            cx.beginPath(); cx.ellipse(32, 32, 16, 18, 0, 0, Math.PI*2); cx.fill();
+            cx.fillStyle = '#B23B3B';
+            cx.fillRect(24, 22, 16, 12);
+
+            cx.fillStyle = '#7A2020';
+            cx.fillRect(10, 24, 8, 18); cx.fillRect(46, 24, 8, 18);
+            cx.fillStyle = '#E0E0E0';
+            cx.fillRect(8, 40, 3, 6); cx.fillRect(53, 40, 3, 6);
+
+            cx.fillStyle = '#8B2525';
+            cx.beginPath(); cx.arc(32, 16, 12, 0, Math.PI*2); cx.fill();
+
+            cx.fillStyle = '#DDD';
+            cx.beginPath(); cx.moveTo(22, 14); cx.lineTo(12, 2); cx.lineTo(18, 8); cx.fill();
+            cx.beginPath(); cx.moveTo(42, 14); cx.lineTo(52, 2); cx.lineTo(46, 8); cx.fill();
+
+            cx.fillStyle = '#FFD700';
+            cx.fillRect(25, 13, 4, 3); cx.fillRect(35, 13, 4, 3);
+            cx.fillStyle = '#FF0000';
+            cx.fillRect(26, 14, 2, 1); cx.fillRect(36, 14, 2, 1);
+
+            cx.fillStyle = '#1A0000'; cx.fillRect(26, 19, 12, 7);
+            cx.fillStyle = '#FFF';
+            cx.fillRect(27, 19, 2, 2); cx.fillRect(31, 19, 2, 2); cx.fillRect(35, 19, 2, 2);
+            cx.fillRect(29, 24, 2, 2); cx.fillRect(33, 24, 2, 2);
+
+            return cv;
+        }
+
+        const brickTex = generateBrickTexture();
+        const techTex = generateTechTexture();
+        const demonTex = generateDemonSprite();
+
+        const map = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,0,2,0,1,1,1,0,1,0,1],
+            [1,0,1,0,0,1,0,0,0,0,0,1,0,1,0,1],
+            [1,0,0,0,1,1,2,2,2,1,0,0,0,1,0,1],
+            [1,0,1,0,0,0,0,0,0,1,1,1,0,1,0,1],
+            [1,0,1,1,1,0,1,1,0,0,0,1,0,0,0,1],
+            [1,0,0,0,2,0,1,1,1,1,0,2,2,2,0,1],
+            [1,2,2,0,2,0,0,0,0,1,0,0,0,1,0,1],
+            [1,0,0,0,1,1,1,1,0,1,1,1,0,1,0,1],
+            [1,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1],
+            [1,0,1,1,1,1,0,2,2,2,0,1,0,1,0,1],
+            [1,0,0,0,0,1,0,0,0,2,0,0,0,1,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        let player = {
+            x: 1.5, y: 1.5, angle: 0, fov: Math.PI / 3,
+            health: 100, armor: 25, ammo: 25, kills: 0, maxKills: 5
+        };
+
+        let enemies = [
+            { x: 5.5, y: 5.5, health: 60, state: 'idle' },
+            { x: 10.5, y: 2.5, health: 60, state: 'idle' },
+            { x: 13.5, y: 6.5, health: 60, state: 'idle' },
+            { x: 8.5, y: 11.5, health: 60, state: 'idle' },
+            { x: 2.5, y: 12.5, health: 60, state: 'idle' }
+        ];
+
+        let items = [
+            { x: 3.5, y: 5.5, type: 'health', collected: false },
+            { x: 11.5, y: 5.5, type: 'ammo', collected: false },
+            { x: 7.5, y: 2.5, type: 'armor', collected: false },
+            { x: 1.5, y: 10.5, type: 'health', collected: false },
+            { x: 13.5, y: 11.5, type: 'ammo', collected: false }
+        ];
+
+        let gameState = 'START';
+        let keys = {};
+        let touchState = { forward: 0, side: 0, turnLeft: false, turnRight: false };
+        let gunFlash = 0;
+        let faceTimer = 0;
+        let faceExpression = '😁';
+
+        function initDoom() {
+            const canvas = document.getElementById('gameCanvas');
+            if (!canvas) return;
+            doomCtx = canvas.getContext('2d');
+
+            const joyArea = document.getElementById('joystick-area');
+            const joyKnob = document.getElementById('joystick-knob');
+            let activePointerId = null;
+
+            if (joyArea) {
+                joyArea.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    activePointerId = e.pointerId;
+                    joyArea.setPointerCapture(e.pointerId);
+                    updateJoystickPos(e.clientX, e.clientY);
+                });
+
+                joyArea.addEventListener('pointermove', (e) => {
+                    if (activePointerId === e.pointerId) {
+                        e.preventDefault();
+                        updateJoystickPos(e.clientX, e.clientY);
+                    }
+                });
+
+                joyArea.addEventListener('pointerup', (e) => {
+                    if (activePointerId === e.pointerId) {
+                        e.preventDefault();
+                        joyArea.releasePointerCapture(e.pointerId);
+                        resetJoystick();
+                    }
+                });
+            }
+
+            function updateJoystickPos(clientX, clientY) {
+                if (!joyArea) return;
+                const rect = joyArea.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                let dx = clientX - centerX;
+                let dy = clientY - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const maxRadius = 35;
+
+                if (dist > maxRadius) {
+                    dx = (dx / dist) * maxRadius;
+                    dy = (dy / dist) * maxRadius;
+                }
+
+                joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+                touchState.forward = -dy / maxRadius;
+                touchState.side = dx / maxRadius;
+            }
+
+            function resetJoystick() {
+                activePointerId = null;
+                if(joyKnob) joyKnob.style.transform = `translate(0px, 0px)`;
+                touchState.forward = 0;
+                touchState.side = 0;
+            }
+
+            function bindTouchButtonLocal(id, property) {
+                const btn = document.getElementById(id);
+                if (!btn) return;
+                btn.addEventListener('pointerdown', (e) => { e.preventDefault(); touchState[property] = true; });
+                btn.addEventListener('pointerup', (e) => { e.preventDefault(); touchState[property] = false; });
+            }
+
+            bindTouchButtonLocal('btn-turn-left', 'turnLeft');
+            bindTouchButtonLocal('btn-turn-right', 'turnRight');
+
+            const fireBtn = document.getElementById('btn-fire');
+            if (fireBtn) {
+                fireBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); fireWeapon(); });
+            }
+
+            const startBtn = document.getElementById('doom-start-btn');
+            if (startBtn) {
+                startBtn.addEventListener('click', () => {
+                    initAudio();
+                    document.getElementById('start-overlay').style.display = 'none';
+                    gameState = 'PLAYING';
+                });
+            }
+
+            const restartBtn = document.getElementById('restart-btn');
+            if (restartBtn) {
+                restartBtn.addEventListener('click', () => {
+                    resetGame();
+                    document.getElementById('end-overlay').style.display = 'none';
+                    gameState = 'PLAYING';
+                });
+            }
+
+            if (!doomInitialized) {
+                doomInitialized = true;
+                window.addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Space') fireWeapon(); });
+                window.addEventListener('keyup', e => { keys[e.code] = false; });
+                requestAnimationFrame(doomLoop);
+            }
+        }
+
+        function resetGame() {
+            player.x = 1.5; player.y = 1.5; player.angle = 0;
+            player.health = 100; player.armor = 25; player.ammo = 25; player.kills = 0;
+            enemies.forEach(e => { e.health = 60; e.state = 'idle'; });
+            items.forEach(i => i.collected = false);
+        }
+
+        function fireWeapon() {
+            if (gameState !== 'PLAYING' || !document.getElementById('gameCanvas')) return;
+            if (player.ammo <= 0) { playSound('pain'); return; }
+            player.ammo--;
+            gunFlash = 5;
+            playSound('shotgun');
+            updateFace('shoot');
+
+            enemies.forEach(enemy => {
+                if (enemy.health <= 0) return;
+                let dx = enemy.x - player.x;
+                let dy = enemy.y - player.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                let angleToEnemy = Math.atan2(dy, dx);
+                let diff = angleToEnemy - player.angle;
+
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+
+                if (Math.abs(diff) < 0.45 && dist < 6.0) {
+                    enemy.health -= 30;
+                    enemy.state = 'alert';
+                    if (enemy.health <= 0) {
+                        player.kills++;
+                        if (player.kills >= player.maxKills) triggerVictory();
+                    }
+                }
+            });
+        }
+
+        function updateFace(type) {
+            faceTimer = 25;
+            if (type === 'shoot') faceExpression = '😠';
+            else if (type === 'pain') faceExpression = '😱';
+        }
+
+        function triggerGameOver() {
+            gameState = 'GAMEOVER';
+            const endTitle = document.getElementById('end-title');
+            const endDesc = document.getElementById('end-desc');
+            const endOverlay = document.getElementById('end-overlay');
+            if(endTitle) endTitle.innerText = 'YOU DIED';
+            if(endDesc) endDesc.innerText = 'The demons consumed your flesh.';
+            if(endOverlay) endOverlay.style.display = 'flex';
+        }
+
+        function triggerVictory() {
+            gameState = 'VICTORY';
+            const endTitle = document.getElementById('end-title');
+            const endDesc = document.getElementById('end-desc');
+            const endOverlay = document.getElementById('end-overlay');
+            if(endTitle) endTitle.innerText = 'VICTORY!';
+            if(endDesc) endDesc.innerText = 'All demons eradicated! UAC Base secured.';
+            if(endOverlay) endOverlay.style.display = 'flex';
+        }
+
+        function updateDoom() {
+            if (gameState !== 'PLAYING') return;
+
+            let moveSpeed = 0.038;
+            let rotSpeed = 0.032;
+            let forward = touchState.forward;
+            let side = touchState.side;
+            let turn = 0;
+
+            if (keys['KeyW'] || keys['ArrowUp']) forward += 1;
+            if (keys['KeyS'] || keys['ArrowDown']) forward -= 1;
+            if (keys['KeyA']) side -= 1;
+            if (keys['KeyD']) side += 1;
+            if (keys['ArrowLeft'] || keys['KeyQ'] || touchState.turnLeft) turn -= 1;
+            if (keys['ArrowRight'] || keys['KeyE'] || touchState.turnRight) turn += 1;
+
+            player.angle += turn * rotSpeed;
+
+            let cos = Math.cos(player.angle);
+            let sin = Math.sin(player.angle);
+            let nx = player.x + (cos * forward - sin * side) * moveSpeed;
+            let ny = player.y + (sin * forward + cos * side) * moveSpeed;
+
+            if (map[Math.floor(player.y)][Math.floor(nx)] === 0) player.x = nx;
+            if (map[Math.floor(ny)][Math.floor(player.x)] === 0) player.y = ny;
+
+            enemies.forEach(enemy => {
+                if (enemy.health <= 0) return;
+                let dx = player.x - enemy.x;
+                let dy = player.y - enemy.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < 4.5) {
+                    enemy.state = 'alert';
+                    if (dist < 1.2 && Math.random() < 0.08) {
+                        let dmg = Math.floor(Math.random() * 8) + 4;
+                        if (player.armor > 0) {
+                            player.armor -= dmg;
+                            if (player.armor < 0) { player.health += player.armor; player.armor = 0; }
+                        } else {
+                            player.health -= dmg;
+                        }
+                        playSound('pain');
+                        updateFace('pain');
+                        if (player.health <= 0) {
+                            player.health = 0;
+                            triggerGameOver();
+                        }
+                    }
+                }
+            });
+
+            items.forEach(item => {
+                if (!item.collected) {
+                    let dist = Math.sqrt(Math.pow(item.x - player.x, 2) + Math.pow(item.y - player.y, 2));
+                    if (dist < 0.5) {
+                        item.collected = true;
+                        playSound('item');
+                        if (item.type === 'health') player.health = Math.min(100, player.health + 25);
+                        if (item.type === 'ammo') player.ammo += 10;
+                        if (item.type === 'armor') player.armor = Math.min(100, player.armor + 25);
+                    }
+                }
+            });
+
+            if (faceTimer > 0) {
+                faceTimer--;
+                if (faceTimer === 0) faceExpression = '😁';
+            }
+
+            if(document.getElementById('hud-health')) {
+                document.getElementById('hud-health').innerText = player.health;
+                document.getElementById('hud-armor').innerText = player.armor;
+                document.getElementById('hud-ammo').innerText = player.ammo;
+                document.getElementById('hud-kills').innerText = `${player.kills}/${player.maxKills}`;
+                document.getElementById('face').innerText = faceExpression;
+            }
+        }
+
+        function renderDoom() {
+            if (!doomCtx) return;
+
+            doomCtx.fillStyle = '#1A1A1A'; doomCtx.fillRect(0, 0, screenWidth, screenHeight / 2);
+            doomCtx.fillStyle = '#2C2C2C'; doomCtx.fillRect(0, screenHeight / 2, screenWidth, screenHeight / 2);
+
+            let zBuffer = new Array(screenWidth);
+
+            for (let x = 0; x < screenWidth; x++) {
+                let cameraX = 2 * x / screenWidth - 1;
+                let rayAngle = player.angle + Math.atan(cameraX * Math.tan(player.fov / 2));
+
+                let rayDirX = Math.cos(rayAngle);
+                let rayDirY = Math.sin(rayAngle);
+
+                let mapX = Math.floor(player.x);
+                let mapY = Math.floor(player.y);
+
+                let sideDistX, sideDistY;
+                let deltaDistX = Math.abs(1 / rayDirX);
+                let deltaDistY = Math.abs(1 / rayDirY);
+                let perpWallDist;
+
+                let stepX, stepY;
+                let hit = 0;
+                let side = 0;
+
+                if (rayDirX < 0) { stepX = -1; sideDistX = (player.x - mapX) * deltaDistX; }
+                else { stepX = 1; sideDistX = (mapX + 1.0 - player.x) * deltaDistX; }
+
+                if (rayDirY < 0) { stepY = -1; sideDistY = (player.y - mapY) * deltaDistY; }
+                else { stepY = 1; sideDistY = (mapY + 1.0 - player.y) * deltaDistY; }
+
+                while (hit === 0) {
+                    if (sideDistX < sideDistY) {
+                        sideDistX += deltaDistX; mapX += stepX; side = 0;
+                    } else {
+                        sideDistY += deltaDistY; mapY += stepY; side = 1;
+                    }
+                    if (map[mapY][mapX] > 0) hit = map[mapY][mapX];
+                }
+
+                if (side === 0) perpWallDist = (mapX - player.x + (1 - stepX) / 2) / rayDirX;
+                else perpWallDist = (mapY - player.y + (1 - stepY) / 2) / rayDirY;
+
+                zBuffer[x] = perpWallDist;
+
+                let lineHeight = Math.floor(screenHeight / perpWallDist);
+                let drawStart = Math.floor(-lineHeight / 2 + screenHeight / 2);
+
+                let wallX;
+                if (side === 0) wallX = player.y + perpWallDist * rayDirY;
+                else          wallX = player.x + perpWallDist * rayDirX;
+                wallX -= Math.floor(wallX);
+
+                let texX = Math.floor(wallX * TEX_SIZE);
+                if (side === 0 && rayDirX > 0) texX = TEX_SIZE - texX - 1;
+                if (side === 1 && rayDirY < 0) texX = TEX_SIZE - texX - 1;
+
+                let activeTex = (hit === 2) ? techTex : brickTex;
+
+                doomCtx.drawImage(activeTex, texX, 0, 1, TEX_SIZE, x, drawStart, 1, lineHeight);
+
+                let shadowAlpha = Math.min(0.85, Math.max(0, perpWallDist / 10));
+                if (side === 1) shadowAlpha = Math.min(0.9, shadowAlpha + 0.2);
+                doomCtx.fillStyle = `rgba(0, 0, 0, ${shadowAlpha})`;
+                doomCtx.fillRect(x, drawStart, 1, lineHeight);
+            }
+
+            let sprites = [];
+            enemies.forEach(en => { if (en.health > 0) sprites.push({ x: en.x, y: en.y, type: 'enemy' }); });
+            items.forEach(it => { if (!it.collected) sprites.push({ x: it.x, y: it.y, type: it.type }); });
+
+            sprites.sort((a, b) => {
+                let distA = Math.pow(player.x - a.x, 2) + Math.pow(player.y - a.y, 2);
+                let distB = Math.pow(player.x - b.x, 2) + Math.pow(player.y - b.y, 2);
+                return distB - distA;
+            });
+
+            sprites.forEach(sprite => {
+                let spriteX = sprite.x - player.x;
+                let spriteY = sprite.y - player.y;
+
+                let carX = spriteX * Math.sin(player.angle) - spriteY * Math.cos(player.angle);
+                let carY = spriteX * Math.cos(player.angle) + spriteY * Math.sin(player.angle);
+
+                if (carY > 0.1) {
+                    let spriteScreenX = Math.floor((screenWidth / 2) * (1 + carX / carY / Math.tan(player.fov / 2)));
+                    let spriteHeight = Math.abs(Math.floor(screenHeight / carY));
+                    let drawStartY = Math.max(0, Math.floor(-spriteHeight / 2 + screenHeight / 2));
+                    let drawEndY = Math.min(screenHeight, Math.floor(spriteHeight / 2 + screenHeight / 2));
+                    let spriteWidth = Math.abs(Math.floor(screenHeight / carY));
+                    let drawStartX = Math.max(0, Math.floor(-spriteWidth / 2 + spriteScreenX));
+                    let drawEndX = Math.min(screenWidth, Math.floor(spriteWidth / 2 + spriteScreenX));
+
+                    for (let stripe = drawStartX; stripe < drawEndX; stripe++) {
+                        if (carY < zBuffer[stripe]) {
+                            if (sprite.type === 'enemy') {
+                                let texX = Math.floor(((stripe - (-spriteWidth / 2 + spriteScreenX)) / spriteWidth) * TEX_SIZE);
+                                if (texX >= 0 && texX < TEX_SIZE) {
+                                    doomCtx.drawImage(demonTex, texX, 0, 1, TEX_SIZE, stripe, drawStartY, 1, drawEndY - drawStartY);
+                                }
+                            } else if (sprite.type === 'health') {
+                                doomCtx.fillStyle = '#FFF';
+                                doomCtx.fillRect(stripe, drawStartY + (drawEndY - drawStartY) * 0.5, 1, 4);
+                                doomCtx.fillStyle = '#F00';
+                                doomCtx.fillRect(stripe, drawStartY + (drawEndY - drawStartY) * 0.55, 1, 2);
+                            } else if (sprite.type === 'ammo') {
+                                doomCtx.fillStyle = '#D2B48C';
+                                doomCtx.fillRect(stripe, drawStartY + (drawEndY - drawStartY) * 0.6, 1, 3);
+                            } else if (sprite.type === 'armor') {
+                                doomCtx.fillStyle = '#00FF00';
+                                doomCtx.fillRect(stripe, drawStartY + (drawEndY - drawStartY) * 0.5, 1, 3);
+                            }
+                        }
+                    }
+                }
+            });
+
+            let gunX = screenWidth / 2 - 20;
+            let gunY = screenHeight - 45 + (gunFlash > 0 ? 8 : 0);
+            doomCtx.fillStyle = '#1A1A1A'; doomCtx.fillRect(gunX, gunY + 15, 40, 30);
+            doomCtx.fillStyle = '#333333'; doomCtx.fillRect(gunX + 10, gunY, 20, 20);
+            if (gunFlash > 0) {
+                gunFlash--;
+                doomCtx.fillStyle = '#FFFF00';
+                doomCtx.beginPath(); doomCtx.arc(screenWidth / 2, gunY - 4, 16, 0, Math.PI * 2); doomCtx.fill();
+            }
+
+            const mapScale = 3.0; const mapOffsetX = 6; const mapOffsetY = 6;
+            doomCtx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+            doomCtx.fillRect(mapOffsetX - 2, mapOffsetY - 2, map[0].length * mapScale + 4, map.length * mapScale + 4);
+
+            for (let my = 0; my < map.length; my++) {
+                for (let mx = 0; mx < map[my].length; mx++) {
+                    if (map[my][mx] > 0) {
+                        doomCtx.fillStyle = map[my][mx] === 2 ? '#4A525A' : '#777';
+                        doomCtx.fillRect(mapOffsetX + mx * mapScale, mapOffsetY + my * mapScale, mapScale, mapScale);
+                    }
+                }
+            }
+
+            enemies.forEach(enemy => {
+                if (enemy.health > 0) {
+                    doomCtx.fillStyle = '#FF0000';
+                    doomCtx.fillRect(mapOffsetX + enemy.x * mapScale - 1, mapOffsetY + enemy.y * mapScale - 1, 2.5, 2.5);
+                }
+            });
+
+            let pMapX = mapOffsetX + player.x * mapScale;
+            let pMapY = mapOffsetY + player.y * mapScale;
+            doomCtx.fillStyle = '#FFFF00';
+            doomCtx.beginPath(); doomCtx.arc(pMapX, pMapY, 2, 0, Math.PI * 2); doomCtx.fill();
+        }
+
+        function doomLoop() {
+            requestAnimationFrame(doomLoop);
+            if (!document.getElementById('gameCanvas')) return;
+            updateDoom();
+            renderDoom();
+        }
+
+        openApp('paint');
+
+    </script>
+</body>
+</html>
